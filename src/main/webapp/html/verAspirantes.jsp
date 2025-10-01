@@ -1,0 +1,389 @@
+<%--
+  Created by IntelliJ IDEA.
+  User: Josem
+  Date: 18/06/2024
+  Time: 09:20 PM
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="mx.edu.utez.tricks.dao.AspiranteDAO" %>
+<%@ page import="java.util.List" %>
+<%@ page import="mx.edu.utez.tricks.model.Aspirante" %>
+<%@ page import="mx.edu.utez.tricks.dao.GrupoDao" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="mx.edu.utez.tricks.model.Grupo" %>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aspirantes</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="shortcut icon" type="image/x-icon" href="../img_svg/faviconAspirante.svg">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/estilosModal.css">
+    <link rel="stylesheet" href="../css/estilosTabla.css">
+    <link rel="stylesheet" href="../css/estilosAlertas.css">
+    <link rel="stylesheet" href="../css/estilosAspirantes.css">
+    <script src="https://kit.fontawesome.com/8f2cb0ebcf.js" crossorigin="anonymous"></script>
+    <style>
+        .sidebar-nav a{
+            line-height: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper" style="height: 100vh;">
+    <jsp:include page="../componentes/menuLateral.jsp" />
+<%
+    String tipoAlerta = (String) session.getAttribute("alerta");
+    String mensajeAlerta = "";
+
+    if (tipoAlerta != null) {
+        switch (tipoAlerta) {
+            case "exito":
+                mensajeAlerta = "Registro exitoso.";
+                break;
+            case "folioExistente":
+                mensajeAlerta = "El folio ya está registrado.";
+                break;
+            case "curpExistente":
+                mensajeAlerta = "El curp ya está registrado.";
+                break;
+            case "falloRegistro":
+                mensajeAlerta = "No se pudo registrar al docente.";
+                break;
+            case "actualizacionExitosa":
+                mensajeAlerta = "Modificación exitosa.";
+                break;
+            case "actualizacionExitosaEsta":
+                mensajeAlerta = "Modificación de estado exitosa.";
+                break;
+            case "falloActualizacion":
+                mensajeAlerta = "No se pudo modificar al docente.";
+                break;
+            case "error":
+                mensajeAlerta = "Se produjo un error.";
+                break;
+            default:
+                mensajeAlerta = "";
+                break;
+        }
+
+        if (!mensajeAlerta.isEmpty()) {
+            String iconoAlerta = "";
+
+            switch (tipoAlerta) {
+                case "exito":
+                    iconoAlerta = "fa-check-circle";
+                    break;
+                case "actualizacionExitosa":
+                    iconoAlerta = "fa-check-circle";
+                    break;
+                case "actualizacionExitosaEsta":
+                    iconoAlerta = "fa-check-circle";
+                    break;
+                case "falloActualizacion":
+                    iconoAlerta = "fa-exclamation-triangle";
+                    break;
+                case "falloRegistro":
+                    iconoAlerta = "fa-exclamation-triangle";
+                    break;
+                case "error":
+                    iconoAlerta = "fa-times-circle";
+                    break;
+                default:
+                    iconoAlerta = "fa-info-circle";
+                    break;
+            }
+%>
+<div class="alerta alerta-dismissible mostrar" role="alert">
+    <i class="fa <%= iconoAlerta %> icono" aria-hidden="true"></i>
+    <span class="texto"><%= mensajeAlerta %></span>
+    <button type="button" class="btn-cerrar" data-bs-dismiss="alert" aria-label="Close">
+        <i class="fa fa-times" aria-hidden="true"></i>
+    </button>
+</div>
+<%
+            session.removeAttribute("alerta");
+        }
+    }
+%>
+
+    <div class="main">
+        <div class="container mt-4 text-left">
+            <h1 class="mb-4 text-light">Aspirantes</h1>
+
+            <!-- Filtros y botón de registrar -->
+            <div class="row mb-3">
+                <div class="col-md-2">
+                    <input type="text" id="filterName" class="form-control" placeholder="Buscar">
+                </div><br><br>
+                <div class="col-md-1.5" style="padding: 0 15px">
+                    <select class="custom-select" id="filterDivision" required>
+                        <option value="">Grupo</option>
+                        <option value="No asignado" style="color: red">No asignado</option>
+                        <%
+                            GrupoDao dao2 = new GrupoDao();
+                            ArrayList<Grupo> lista = dao2.getAll();
+                            for (Grupo g : lista) {
+                        %>
+                        <option value="<%= g.getNombreGrupo() %>"><%= g.getNombreGrupo() %></option>
+                        <% } %>
+                    </select>
+
+                </div>
+                <div class="col-md-1.5" style="padding: 0 15px">
+                    <select class="custom-select" id="filterCareer" required>
+                        <option value="">Estatus</option>
+                        <option value="1">Activo</option>
+                        <option value="2">Inactivo</option>
+                    </select>
+                </div><br><br>
+                <div class="col-md-3">
+                    <button type="button" class="btn btnIcono w-100" data-toggle="modal"
+                            data-target="#registrarAspirante" style="display: flex; justify-content: space-evenly; align-items: center">
+                        Registrar Aspirante
+                        <i class="fa-solid fa-user fa-lg"></i>
+                    </button>
+                </div><br><br>
+                <div class="col-md-3">
+                    <button type="button" class="btn btnIcono w-100" data-toggle="modal"
+                            data-target="#registrarAspirantes" style="display: flex; justify-content: space-evenly; align-items: center">
+                        Registrar Aspirantes
+                        <i class="fa-solid fa-users fa-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <br>
+
+            <div class="container-xxl tabla">
+                <table class="table" id="example">
+                    <thead class="thead-light">
+                    <tr>
+                        <th>Folio</th>
+                        <th>Nombre</th>
+                        <th>CURP</th>
+                        <th>Grupo</th>
+                        <th>Estado</th>
+                        <th>Editar</th>
+                    </tr>
+                    </thead>
+                    <tbody id="aspirantesTableBody">
+                    <%
+                        AspiranteDAO dao = new AspiranteDAO();
+                        List<Aspirante> aspirantes = dao.getAllAspirantes();
+                        for (Aspirante aspirante : aspirantes) {
+                    %>
+                    <tr style="height: 10px; font-size: 15px" data-folio="<%= aspirante.getFolioAspirante() %>">
+                        <td style="padding: 0; margin: 0"><%= aspirante.getFolioAspirante() %></td>
+                        <td style="padding: 0; margin: 0"><%= aspirante.getNombre() %> <%= aspirante.getApellidos() %></td>
+                        <td style="padding: 0; margin: 0"><%= aspirante.getCurp() %></td>
+                        <%if(aspirante.getGrupo2() == null){%>
+                        <td style="padding: 0; margin: 0; color: red">No asignado</td>
+                        <%}else{%>
+                        <td style="padding: 0; margin: 0"><%= aspirante.getGrupo2() %></td>
+                        <%}%>
+                        <td class="d-flex justify-content-center align-items-center" style="margin: 0;">
+                            <% if (aspirante.getEstado() == 1) { %>
+                            <div class="activo" data-estado="1" data-toggle="modal" data-target="#modificarEstado" data-whatever="ModificarEstado"></div>
+                            <% } else { %>
+                            <div class="inactivo" data-estado="2" data-toggle="modal" data-target="#modificarEstado" data-whatever="ModificarEstado"></div>
+                            <% } %>
+                        </td>
+                        <td style="padding: 0; margin: 0">
+                            <button class="btn btnIcono btn-modificar" data-toggle="modal"
+                                    style="height: 25px; font-size: 15px; margin: 5px; width: 25px"
+                                    data-target="#modificarAspirante"
+                                    data-whatever="Modificar"
+                                    data-folio="<%= aspirante.getFolioAspirante() %>"
+                                    data-nombre="<%= aspirante.getNombre() %>"
+                                    data-apellido="<%= aspirante.getApellidos() %>"
+                                    data-curp="<%= aspirante.getCurp() %>"
+                                    data-fecha="<%= aspirante.getFechaNacimiento() %>">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal registrar aspirante nuevo -->
+<div class="modal fade" id="registrarAspirante" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registrar Aspirante</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="../RegistrarAspiranteServlet" method="post">
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="folioAspirante" name="folioAspirante"  maxlength="10" placeholder="">
+                        <label for="folioAspirante" class="col-form-label">Folio:</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="nombreAspirante" name="nombreAspirante" maxlength="50" placeholder="">
+                        <label for="nombreAspirante" class="col-form-label">Nombre:</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="apellidosAspirante" name="apellidosAspirante"  maxlength="50" placeholder="">
+                        <label for="apellidosAspirante" class="col-form-label">Apellidos:</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="curpAspirante" name="curpAspirante"  maxlength="25" placeholder="">
+                        <label for="curpAspirante" class="col-form-label">CURP:</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="date" class="form-control" id="fechaNacimientoAspirante" name="fechaNacimientoAspirante">
+                        <label for="fechaNacimientoAspirante" class="col-form-label">Fecha de Nacimiento:</label>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Registrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal modificar aspirante -->
+<div class="modal fade" id="modificarAspirante" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Aspirante</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="../ActualizarAspiranteServlet" method="post">
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="folioAspirante3" maxlength="10"  name="folioAspirante" readonly>
+                        <label for="folioAspirante" class="col-form-label" >Folio:</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="nombreAspirante3" maxlength="50" name="nombreAspirante">
+                        <label for="nombreAspirante" class="col-form-label"   >Nombre:</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="apellidosAspirante3" maxlength="50" name="apellidosAspirante">
+                        <label for="apellidosAspirante" class="col-form-label"   >Apellidos:</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="curpAspirante3" maxlength="25" name="curpAspirante">
+                        <label for="curpAspirante" class="col-form-label"   >CURP:</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="date" class="form-control" id="fechaNacimientoAspirante3" name="fechaNacimientoAspirante">
+                        <label for="fechaNacimientoAspirante" class="col-form-label">Fecha de Nacimiento:</label>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Actualizar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modificar estado del aspirante -->
+<div class="modal fade" id="modificarEstado" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document" style="max-height: 100vh !important; margin: 40vh auto;">
+        <div class="modal-content">
+            <div class="modal-header custom-modal-header">
+                <h5 class="modal-title custom-modal-title">Estado</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h6 class="" id="exampleModalLabel">¿Estás seguro de actualizar el estado del aspirante?</h6>
+                <form action="../ActualizarEstadoServlet" method="post">
+                    <div class="form-group" style="display: none">
+                        <label for="folioAspirante2" class="col-form-label">Folio del Aspirante:</label>
+                        <input type="text" class="form-control" id="folioAspirante2" name="folioAspirante2">
+                    </div>
+                    <div class="form-group" style="display: none">
+                        <label for="estadoAspirante" class="col-form-label">Estado del Aspirante:</label>
+                        <input type="text" class="form-control" id="estadoAspirante" name="estadoAspirante">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Actualizar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para carga masiva de aspirantes-->
+<div class="modal fade" id="registrarAspirantes" tabindex="-1" role="dialog" aria-labelledby="cargaMasivaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content modal-content-custom">
+            <div class="modal-header modal-header-custom">
+                <h5 class="modal-title modal-title-custom">Registrar Aspirantes</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body modal-body-custom">
+                <form action="../cargaraspirantes" method="post" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <input type="file" class="form-control form-control-custom" id="archivoCargaMasiva" name="archivoCargaMasiva" accept=".xlsx" value="" placeholder=" ">
+                        <label for="archivoCargaMasiva" class="col-form-label">Asignación masiva</label>
+                    </div>
+                    <div class="modal-footer modal-footer-custom">
+                        <a href="#" class="btn btnFormatos" onclick="openImagePopup('../img/ejemploAspirantes.png', 'Ejemplo de formato'); return false;">
+                            Ejemplo de formato
+                        </a>
+                        <a href="../formatos/FormatoRegistroMasivo.xlsx" class="btn btnFormatos" download>
+                            Descargar formato
+                        </a>
+                        <button type="submit" class="btn btn-primary">Registrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // JavaScript para ocultar automáticamente la alerta después de 5 segundos
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerta = document.querySelector('.alerta');
+
+        if (alerta.classList.contains('mostrar')) {
+            setTimeout(function() {
+                alerta.classList.add('ocultar');
+            }, 5000); // 5000 ms = 5 segundos
+
+            // Remover la alerta del DOM después de la transición (opcional)
+            alerta.addEventListener('transitionend', function() {
+                if (alerta.classList.contains('ocultar')) {
+                    alerta.remove();
+                }
+            });
+        }
+    });
+
+</script>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="../js/verAspirantes.js"></script>
+<script src="../js/script.js"></script>
+<script src="../js/scriptAlertas.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
